@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace Day02
 {
@@ -30,78 +31,101 @@ namespace Day02
                 Console.WriteLine($"*** Examining range of {range}...");
 
                 var rangeValues = range.Split("-");
-                var rangeStartSize = rangeValues[0].Length;
-                var rangeEndSize = rangeValues[1].Length;
-                var minRange = ulong.Parse(rangeValues[0]);
-                var maxRange = ulong.Parse(rangeValues[1]);
-                var rangeStartAndEndSizesAreSame = rangeStartSize == rangeEndSize;
-                var rangeStartIsEvenSize = rangeStartSize % 2 == 0;
-                var rangeEndIsEvenSize = rangeEndSize % 2 == 0;
+                var invalidRangeValues = FindInvalidValuesInRangeForSize(rangeValues, 2);
 
-                if (!(rangeStartIsEvenSize || rangeEndIsEvenSize))
+                foreach (var invalidId in invalidRangeValues)
                 {
-                    // we can't check for duplicate values on values which have an odd number of digits
-                    Console.WriteLine("**** Neither the range start or end sizes are an even length, so skipping it.");
-                    continue;
-                }
-
-                ulong rangeStart;
-                ulong rangeEnd;
-
-                if (rangeStartAndEndSizesAreSame)
-                {
-                    // both start and end are the same size
-                    // take the first half of each to determine what values we have to iterate through
-                    // for example, for a range of 8800-9913, we want to pull 88 and 99 to iterate through
-                    rangeStart = ulong.Parse(rangeValues[0].Substring(0, rangeStartSize / 2));
-                    rangeEnd = ulong.Parse(rangeValues[1].Substring(0, rangeStartSize / 2));
-                    Console.WriteLine($"**** Start/end are same size; we'll iterate from {rangeStart} to {rangeEnd}");
-                }
-                else if (rangeStartSize % 2 == 0)
-                {
-                    // range start is even number of digits, but range end is odd
-                    // can only check up to the last possible value to the length of the range start
-                    // for example, for range of 8800-10100, can only check from 8800 to 9999
-                    // from there, we'll pull 88 and 99 to iterate through
-                    rangeStart = ulong.Parse(rangeValues[0][..(rangeStartSize / 2)]);
-                    rangeEnd = ulong.Parse(new string('9', rangeStartSize / 2));
-                    Console.WriteLine($"**** Start/end are different sizes, and start has an even number of digits; we'll iterate from {rangeStart} to {rangeEnd}");
-                }
-                else
-                {
-                    // range end is even number of digits, but range start is odd
-                    // can only check from the first possible value to the length of the range end
-                    // for example, for range of 880-1100, can only check from 1000 to 1100
-                    // from there, we'll want to pull 10 and 11 to iterate through
-                    rangeStart = ulong.Parse($"1{new string('0', (rangeEndSize / 2) - 1)}");
-                    rangeEnd = ulong.Parse(rangeValues[1][..(rangeEndSize / 2)]);
-                    Console.WriteLine($"**** Start/end are different sizes, and end has an even number of digits; we'll iterate from {rangeStart} to {rangeEnd}");
-                }
-
-                for (var i = rangeStart; i <= rangeEnd; i++)
-                {
-                    var idToCheck = ulong.Parse($"{i}{i}");
-
-                    if (idToCheck >= minRange)
-                    {
-                        if (idToCheck <= maxRange)
-                        {
-                            Console.WriteLine($"**** Found invalid ID in range: {idToCheck}");
-                            totalOfInvalidIDs += idToCheck;
-                        }
-                        else
-                        {
-                            // we've gone past the upper bound of the range, so exit early
-                            break;
-                        }
-                    }
+                    totalOfInvalidIDs += invalidId;
                 }
             }
 
             Console.WriteLine($"*** Total of invalid IDs: {totalOfInvalidIDs}");
 		}
 
-		private static void PartB()
+        private static List<ulong> FindInvalidValuesInRangeForSize(string[] RangeValues, int RepeatLength)
+        {
+            List<ulong> invalidRangeValues = [];
+
+            var rangeStartSize = RangeValues[0].Length;
+            var rangeEndSize = RangeValues[1].Length;
+            var minRange = ulong.Parse(RangeValues[0]);
+            var maxRange = ulong.Parse(RangeValues[1]);
+            var rangeStartAndEndSizesAreSame = rangeStartSize == rangeEndSize;
+            var rangeStartFitsRepeatSize = rangeStartSize % RepeatLength == 0;
+            var rangeEndFitsRepeatSize = rangeEndSize % RepeatLength == 0;
+
+            if (!(rangeStartFitsRepeatSize || rangeEndFitsRepeatSize))
+            {
+                // we can't check for repeated values on values which have can't be split with no remainder
+                // for example, if the start of the range is 7 digits long and we're looking for a repeat length of 3,
+                // then it doesn't split such that we can repeat 3 digits multiple times and not exceed the range value length
+                Console.WriteLine("**** Neither the range start or end sizes are a length which supports the repeat length, so skipping it.");
+                return invalidRangeValues;
+            }
+
+            ulong rangeStart;
+            ulong rangeEnd;
+
+            if (rangeStartAndEndSizesAreSame)
+            {
+                // both start and end are the same size
+                // take the first half of each to determine what values we have to iterate through
+                // for example, for a range of 8800-9913, we want to pull 88 and 99 to iterate through
+                rangeStart = ulong.Parse(RangeValues[0][..(rangeStartSize / RepeatLength)]);
+                rangeEnd = ulong.Parse(RangeValues[1][..(rangeStartSize / RepeatLength)]);
+                Console.WriteLine($"**** Start/end are same size; we'll iterate from {rangeStart} to {rangeEnd}");
+            }
+            else if (rangeStartSize % RepeatLength == 0)
+            {
+                // range start can be split up by the repeat length with no remainder, but range end cannot
+                // can only check up to the last possible value to the length of the range start
+                // for example, for a repeat length of 2, for range of 8800-10100, can only check from 8800 to 9999
+                // from there, we'll pull 88 and 99 to iterate through
+                rangeStart = ulong.Parse(RangeValues[0][..(rangeStartSize / RepeatLength)]);
+                rangeEnd = ulong.Parse(new string('9', rangeStartSize / RepeatLength));
+                Console.WriteLine($"**** Start/end are different sizes, and start has a number of digits that can be split up by the repeat length with no remainder; we'll iterate from {rangeStart} to {rangeEnd}");
+            }
+            else
+            {
+                // range end can be split up by the repeat length with no remainder, but range start cannot
+                // can only check from the first possible value to the length of the range end
+                // for example, for a repeat length of 2, for range of 880-1100, can only check from 1000 to 1100
+                // from there, we'll want to pull 10 and 11 to iterate through
+                rangeStart = ulong.Parse($"1{new string('0', (rangeEndSize / RepeatLength) - 1)}");
+                rangeEnd = ulong.Parse(RangeValues[1][..(rangeEndSize / RepeatLength)]);
+                Console.WriteLine($"**** Start/end are different sizes, and end has a number of digits that can be split up by the repeat length with no remainder; we'll iterate from {rangeStart} to {rangeEnd}");
+            }
+
+            for (var i = rangeStart; i <= rangeEnd; i++)
+            {
+                string idValue = "";
+                for (var j = 0; j < RepeatLength; j++)
+                {
+                    idValue += $"{i}";
+                }
+
+                var idToCheck = ulong.Parse(idValue);
+                
+
+                if (idToCheck >= minRange)
+                {
+                    if (idToCheck <= maxRange)
+                    {
+                        Console.WriteLine($"**** Found invalid ID in range: {idToCheck}");
+                        invalidRangeValues.Add(idToCheck);
+                    }
+                    else
+                    {
+                        // we've gone past the upper bound of the range, so exit early
+                        break;
+                    }
+                }
+            }
+
+            return invalidRangeValues;
+        }
+
+        private static void PartB()
 		{
 			Console.WriteLine("\r\n**********");
 			Console.WriteLine("* Part B");
