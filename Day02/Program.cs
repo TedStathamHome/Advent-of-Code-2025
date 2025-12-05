@@ -13,7 +13,7 @@ namespace Day02
 			var puzzleInputRaw = File.ReadLines($"./PuzzleInput-{((args.Length > 0 && args[0].Trim().ToLower() == "test") ? "test" : "full")}.txt").ToList();
 
             PartA(puzzleInputRaw[0]);
-			PartB();
+			PartB(puzzleInputRaw[0]);
 		}
 
 		private static void PartA(string rawRangesToCheck)
@@ -69,8 +69,8 @@ namespace Day02
             if (rangeStartAndEndSizesAreSame)
             {
                 // both start and end are the same size
-                // take the first half of each to determine what values we have to iterate through
-                // for example, for a range of 8800-9913, we want to pull 88 and 99 to iterate through
+                // take the first part of each to determine what values we have to iterate through
+                // for example, for a repeat length of 2, for a range of 8800-9913, we want to pull 88 and 99 to iterate through
                 rangeStart = ulong.Parse(RangeValues[0][..(rangeStartSize / RepeatLength)]);
                 rangeEnd = ulong.Parse(RangeValues[1][..(rangeStartSize / RepeatLength)]);
                 Console.WriteLine($"**** Start/end are same size; we'll iterate from {rangeStart} to {rangeEnd}");
@@ -125,10 +125,50 @@ namespace Day02
             return invalidRangeValues;
         }
 
-        private static void PartB()
+        private static void PartB(string rawRangesToCheck)
 		{
 			Console.WriteLine("\r\n**********");
 			Console.WriteLine("* Part B");
-		}
+
+            string[] rangesToCheck = rawRangesToCheck.Split(',');
+            Console.WriteLine($"** Ranges to check: {rangesToCheck.Count():N0}");
+
+            ulong totalOfInvalidIDs = 0;
+
+            foreach (var range in rangesToCheck)
+            {
+                Console.WriteLine($"*** Examining range of {range}...");
+
+                var rangeValues = range.Split("-");
+                var rangeStartSize = rangeValues[0].Length;
+                var rangeEndSize = rangeValues[1].Length;
+                var largestSize = Math.Max(rangeStartSize, rangeEndSize);
+
+                List<ulong> invalidIdsFound = [];
+
+                // can't start at a size of 1, as that's the whole value and cannot be repeated
+                for (var i = 2; i <= largestSize; i++)
+                {
+                    Console.WriteLine($"*** Examining range for repeat size of {i}...");
+                    var invalidRangeValues = FindInvalidValuesInRangeForSize(rangeValues, i);
+
+                    foreach (var invalidId in invalidRangeValues)
+                    {
+                        // it's possible that one repeat length will create IDs already seen
+                        if (!invalidIdsFound.Contains(invalidId))
+                        {
+                            invalidIdsFound.Add(invalidId);
+                        }
+                    }
+                }
+
+                foreach (var invalidId in invalidIdsFound)
+                {
+                    totalOfInvalidIDs += invalidId;
+                }
+            }
+
+            Console.WriteLine($"*** Total of invalid IDs: {totalOfInvalidIDs}");
+        }
     }
 }
