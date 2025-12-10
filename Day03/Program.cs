@@ -54,16 +54,77 @@ namespace Day03
 
             foreach (var batteryBank in puzzleInputRaw)
             {
+                const int maxDigits = 12;
                 var batteryJoltagesInBank = batteryBank.ToCharArray().Select(b => byte.Parse($"{b}")).ToArray();
+                var bankLength = batteryBank.Length;
                 ulong maxJoltageInBank = 0;
+                Console.WriteLine($"\r\n** Processing bank {batteryBank}");
 
-                for(int i = 0; i < ( batteryJoltagesInBank.Length - 12); i++)
+                for(int i = 0; i < (bankLength - maxDigits); i++)
                 {
-                    // take the character at i
-                    // if the next character is > current character, add 1 to i and continue
-                    // if the next character is <= current character, add current character to string, increment i, and continue
+                    var joltageValue = (new string('0', maxDigits)).ToCharArray();
+                    byte currentDigit = 0;
+                    byte digitsTaken = 0;
+
+                    for (int j = i; j < bankLength; j++)
+                    {
+                        if ((bankLength - j) < (maxDigits - digitsTaken + 1))
+                        {
+                            // if the number of batteries left in the bank is less than the number of digits we need to populate
+                            // in joltageValue, take the digit
+                            currentDigit = batteryJoltagesInBank[j];
+                            joltageValue[digitsTaken] = ($"{currentDigit}").ToCharArray()[0];
+                            digitsTaken++;
+                        }
+                        // take the digit at j
+                        // if the next digit is > current digit, add 1 to j and continue
+                        // if the next digit is <= current digit, add current digit to string, increment j, and continue
+                        else if (digitsTaken < (maxDigits - 1))
+                        {
+                            // if we haven't reached the last digit we can take, move forward
+                            currentDigit = batteryJoltagesInBank[j];
+
+                            // if the next digit is larger than the current digit, move forward to it
+                            // we want to take the largest digit we can before adding it to the joltage value
+                            if (batteryJoltagesInBank[j + 1] > currentDigit)
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                // if the next digit is <= the current digit, take the current digit
+                                joltageValue[digitsTaken] = ($"{currentDigit}").ToCharArray()[0];
+                                digitsTaken++;
+                            }
+                        }
+                        else
+                        {
+                            // once we've reached the last digit we can take, just take the max digit of the remainder of the string
+                            currentDigit = byte.Parse($"{batteryJoltagesInBank[(j)..].Max()}");
+                            joltageValue[digitsTaken] = ($"{currentDigit}").ToCharArray()[0];
+                            digitsTaken++;
+                            break;
+                        }
+                    }
+
+                    ulong joltage = ulong.Parse(new string(joltageValue));
+                    if (joltage > maxJoltageInBank)
+                    {
+                        maxJoltageInBank = joltage;
+                        Console.WriteLine($"*** Current max joltage is {maxJoltageInBank}");
+                    }
                 }
+
+                joltages.Add(maxJoltageInBank);
+                Console.WriteLine($"** Max joltage in bank {batteryBank} is {maxJoltageInBank:N0}");
             }
-		}
-	}
+
+            ulong totalJoltages = 0;
+            foreach (var joltage in joltages)
+            {
+                totalJoltages += joltage;
+            }
+            Console.WriteLine($"* Joltage total is: {totalJoltages:N0}");
+        }
+    }
 }
