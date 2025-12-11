@@ -50,60 +50,52 @@ namespace Day03
 			Console.WriteLine("\r\n**********");
 			Console.WriteLine("* Part B");
 
-            var joltages = new List<ulong>();
+            List<ulong> joltages = [];
 
-            foreach (var batteryBank in puzzleInputRaw)
+            foreach (string batteryBank in puzzleInputRaw)
             {
                 const int maxDigits = 12;
-                var batteryJoltagesInBank = batteryBank.ToCharArray().Select(b => byte.Parse($"{b}")).ToArray();
-                var bankLength = batteryBank.Length;
+                byte[] batteryJoltagesInBank = [.. batteryBank.ToCharArray().Select(b => byte.Parse($"{b}"))];
+                int bankLength = batteryBank.Length;
                 ulong maxJoltageInBank = 0;
                 Console.WriteLine($"\r\n** Processing bank {batteryBank}");
 
-                for(int i = 0; i < (bankLength - maxDigits); i++)
+                for (int i = 0; i < (bankLength - maxDigits); i++)
                 {
-                    var joltageValue = (new string('0', maxDigits)).ToCharArray();
-                    byte currentDigit = 0;
-                    byte digitsTaken = 0;
+                    char[] joltageValue = (new string('0', maxDigits)).ToCharArray();
+                    int currentDigit = 0;
+                    int currentBattery = i;
 
-                    for (int j = i; j < bankLength; j++)
+                    // if we get to the point where we have run out of batteries
+                    // to inspect, we'll want to take the remaining batteries in the bank
+                    // also stop if we've reached the need to calculate the final digit
+                    while ((currentBattery < (bankLength - (maxDigits - currentDigit))) && (currentDigit < (maxDigits - 1)))
                     {
-                        if ((bankLength - j) < (maxDigits - digitsTaken + 1))
+                        // loop until we find the highest digit before the value drops down
+                        if (batteryJoltagesInBank[currentBattery] <= batteryJoltagesInBank[currentBattery + 1])
                         {
-                            // if the number of batteries left in the bank is less than the number of digits we need to populate
-                            // in joltageValue, take the digit
-                            currentDigit = batteryJoltagesInBank[j];
-                            joltageValue[digitsTaken] = ($"{currentDigit}").ToCharArray()[0];
-                            digitsTaken++;
+                            currentBattery++;
+                            continue;
                         }
-                        // take the digit at j
-                        // if the next digit is > current digit, add 1 to j and continue
-                        // if the next digit is <= current digit, add current digit to string, increment j, and continue
-                        else if (digitsTaken < (maxDigits - 1))
-                        {
-                            // if we haven't reached the last digit we can take, move forward
-                            currentDigit = batteryJoltagesInBank[j];
 
-                            // if the next digit is larger than the current digit, move forward to it
-                            // we want to take the largest digit we can before adding it to the joltage value
-                            if (batteryJoltagesInBank[j + 1] > currentDigit)
-                            {
-                                continue;
-                            }
-                            else
-                            {
-                                // if the next digit is <= the current digit, take the current digit
-                                joltageValue[digitsTaken] = ($"{currentDigit}").ToCharArray()[0];
-                                digitsTaken++;
-                            }
-                        }
-                        else
+                        joltageValue[currentDigit] = $"{batteryJoltagesInBank[currentBattery]}"[0];
+                        currentDigit++;
+                        currentBattery++;
+                    }
+
+                    // we're on the last digit, so take the max of the remaining digits
+                    if (currentDigit >= (maxDigits - 1))
+                    {
+                        byte lastDigit = batteryJoltagesInBank[(currentBattery + 1)..].Max();
+                        joltageValue[currentDigit] = $"{lastDigit}"[0];
+                    }
+                    else
+                    {
+                        // we're not on the last digit, so the remaining digits need to be added to the end of joltValue
+                        for (int j = currentBattery; j < bankLength; j++)
                         {
-                            // once we've reached the last digit we can take, just take the max digit of the remainder of the string
-                            currentDigit = byte.Parse($"{batteryJoltagesInBank[(j)..].Max()}");
-                            joltageValue[digitsTaken] = ($"{currentDigit}").ToCharArray()[0];
-                            digitsTaken++;
-                            break;
+                            joltageValue[currentDigit] = $"{batteryJoltagesInBank[j]}"[0];
+                            currentDigit++;
                         }
                     }
 
@@ -111,7 +103,7 @@ namespace Day03
                     if (joltage > maxJoltageInBank)
                     {
                         maxJoltageInBank = joltage;
-                        Console.WriteLine($"*** Current max joltage is {maxJoltageInBank}");
+                        Console.WriteLine($"*** Current max joltage is {maxJoltageInBank:N0}");
                     }
                 }
 
