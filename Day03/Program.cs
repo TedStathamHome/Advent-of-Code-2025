@@ -54,17 +54,49 @@ namespace Day03
 
             foreach (string batteryBank in puzzleInputRaw)
             {
+                Console.WriteLine($"\r\n** Processing bank {batteryBank}");
+
                 const int maxDigits = 12;
                 byte[] batteryJoltagesInBank = [.. batteryBank.ToCharArray().Select(b => byte.Parse($"{b}"))];
                 int bankLength = batteryBank.Length;
                 ulong maxJoltageInBank = 0;
-                Console.WriteLine($"\r\n** Processing bank {batteryBank}");
 
-                for (int i = 0; i < (bankLength - maxDigits); i++)
+                // Fastest approach is to:
+                // 1. Determine the max individual battery joltage across the
+                //    batteries in the bank, excluding the last (maxDigits - 1)
+                //    batteries. Any other joltageValues we calculate which
+                //    start with a lower number would just be excluded, so we
+                //    won't even bother calculating them.
+                // 2. Loop through each occurrance of the value from step 1,
+                //    and calculate the joltageValue, taking the highest one.
+                byte maxBatteryJoltage = batteryJoltagesInBank[..(bankLength - maxDigits)].Max();
+                char maxJoltageChar = $"{maxBatteryJoltage}"[0];
+                Console.WriteLine($"*** Max individual battery joltage before final 12 characters: {maxJoltageChar}");
+
+                // if the 12th-last joltage in the battery bank is the same or higher than
+                // the maxBatteryJoltage, take the last 12 battery joltages and set it
+                // as the maxJoltageInBank.
+                if (batteryJoltagesInBank[bankLength - maxDigits] >= maxBatteryJoltage)
+                {
+                    maxJoltageInBank = ulong.Parse(batteryBank[(bankLength - maxDigits)..]);
+                    Console.WriteLine($"*** Initial maxJoltageInBank: {maxJoltageInBank:N0}");
+                }
+
+                List<int> maxJoltageIndexes = [.. batteryBank.Select((c, i) => new { Char = c, Index = i})
+                    .Where(tuple => tuple.Char == maxJoltageChar)
+                    .Select(tuple => tuple.Index)];
+
+                /// find the first occurrance of the highest digit prior to the last (maxDigits - 1) digits,
+                /// as this will be the start of the first potential max joltage
+                /// after finishing a joltage value, skip forward to the next occurrence of the determined highest digit,
+                /// as everything else will be lower valued and not worth calculating
+
+                foreach (int index in maxJoltageIndexes)
                 {
                     char[] joltageValue = (new string('0', maxDigits)).ToCharArray();
-                    int currentDigit = 0;
-                    int currentBattery = i;
+                    joltageValue[0] = maxJoltageChar;
+                    int currentDigit = 1;
+                    int currentBattery = index + 1;
 
                     // if we get to the point where we have run out of batteries
                     // to inspect, we'll want to take the remaining batteries in the bank
@@ -103,7 +135,7 @@ namespace Day03
                     if (joltage > maxJoltageInBank)
                     {
                         maxJoltageInBank = joltage;
-                        Console.WriteLine($"*** Current max joltage is {maxJoltageInBank:N0}");
+                        Console.WriteLine($"**** Current max joltage is {maxJoltageInBank:N0}");
                     }
                 }
 
