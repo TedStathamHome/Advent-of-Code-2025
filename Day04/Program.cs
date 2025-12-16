@@ -6,13 +6,14 @@ namespace Day04
 {
     internal class RollCoordinate
     {
-        int Row { get; set; }
-        int Col { get; set; }
+        public int Row { get; set; }
+        public int Col { get; set; }
     }
 
     internal class Program
 	{
         const char roll = '@';
+        const char emptySpace = '.';
         const int maxAdjacentRolls = 3;
 
         static void Main(string[] args)
@@ -72,13 +73,78 @@ namespace Day04
             return (adjacentRolls <= maxAdjacentRolls);
         }
 
-        private static void PartB(List<string> puzzleInputRaw)
+        private static void PartB(List<string> rollGrid)
 		{
 			Console.WriteLine("\r\n**********");
 			Console.WriteLine("* Part B");
 
             List<RollCoordinate> removableRolls = [];
             List<RollCoordinate> removedRolls = [];
-		}
-	}
+
+            int rowLength = rollGrid[0].Length;
+
+            // make initial pass through grid to build the list of removable rolls
+            for (int row = 1; row < (rollGrid.Count - 1); row++)
+            {
+                for (int col = 1; col < (rowLength - 1); col++)
+                {
+                    // if we're not looking at a roll, skip the space
+                    if (rollGrid[row][col] != roll)
+                        continue;
+
+                    if (RollIsRemovable(rollGrid, row, col))
+                    {
+                        removableRolls.Add(new RollCoordinate { Row = row, Col = col });
+                    }
+                }
+            }
+
+            while (removableRolls.Count > 0)
+            {
+                int rollsToRemove = removableRolls.Count;
+
+                // mark all of the removable rolls as empty space
+                for (int roll = 0; roll < rollsToRemove; roll++)
+                {
+                    RollCoordinate rollToRemove = removableRolls[0];
+
+                    // remove the roll from the grid
+                    char[] rollRow = rollGrid[rollToRemove.Row].ToCharArray();
+                    rollRow[rollToRemove.Col] = emptySpace;
+                    rollGrid[rollToRemove.Row] = new string(rollRow);
+
+                    // add it to the list of removed rolls
+                    removedRolls.Add(rollToRemove);
+                    removableRolls.RemoveAt(0);
+                }
+
+                // rescan the grid to figure out new set of removable rolls
+                // this is brute force, but my trickier attempt of just scanning
+                // rolls immediately around the one just removed didn't work.
+                for (int row = 1; row < (rollGrid.Count - 1); row++)
+                {
+                    for (int col = 1; col < (rowLength - 1); col++)
+                    {
+                        // if we're not looking at a roll, skip the space
+                        if (rollGrid[row][col] != roll)
+                            continue;
+
+                        if (RollIsRemovable(rollGrid, row, col))
+                        {
+                            removableRolls.Add(new RollCoordinate { Row = row, Col = col });
+                        }
+                    }
+                }
+
+                Console.WriteLine($"*** Removed {rollsToRemove:N0} rolls.");
+
+                foreach (var line in rollGrid)
+                {
+                    Console.WriteLine(line);
+                }
+            }
+
+            Console.WriteLine($"** Removed a total of {removedRolls.Count:N0} rolls.");
+        }
+    }
 }
