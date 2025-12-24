@@ -55,75 +55,54 @@ namespace Day05
 			Console.WriteLine("\r\n**********");
 			Console.WriteLine("* Part B");
 
-            // combine overlapping ingredient ranges until there are none with overlaps
+            IngredientRanges = [.. IngredientRanges.OrderBy(r => r.Start)];
 
-            List<IngredientRange> newRanges = [.. IngredientRanges];
-            List<IngredientRange> rangesToRemove = [];
-            int rangeListChangesMade = 0;
+            Console.WriteLine($"** Initial number of ingredient ranges is {IngredientRanges.Count:N0}");
 
-            foreach (var range in IngredientRanges)
+            int i = 0;
+            while (i < IngredientRanges.Count - 1)
             {
-                // find ranges that exactly match this range in their size
-                var exactMatches = newRanges
-                    .Where(r => range.Start == r.Start && range.End == r.End)
-                    .Select((newRange, index) => new {NewRange = newRange, Index = index})
-                    .ToList();
-
-                // if there are more than 1, remove everything but the first one
-                // generally we should only get a single match, but who knows?
-                if (exactMatches.Count > 1)
+                if (IngredientRanges[i].End < IngredientRanges[i + 1].Start)
                 {
-                    for (int i = 1; i < exactMatches.Count; i++)
-                    {
-                        newRanges.RemoveAt(exactMatches[i].Index);
-                        rangeListChangesMade++;
-                    }
+                    // current range falls before the start of the next range, proceed to checking the next range
+                    i++;
+                    continue;
                 }
 
-                // find matches where the start is within another range,
-                // but is not exactly the same as the found range
-                var rangeStartInOtherRanges = newRanges
-                    .Where(r => range.Start >= r.Start && range.Start <= r.End
-                        && !(range.Start == r.Start && range.End == r.End))
-                    .Select((newRange, index) => new { NewRange = newRange, Index = index })
-                    .ToList();
-
-                if (rangeStartInOtherRanges.Count > 0)
+                if (IngredientRanges[i].Start <= IngredientRanges[i + 1].Start && IngredientRanges[i].End >= IngredientRanges[i + 1].End)
                 {
-                    foreach (var foundRange in rangeStartInOtherRanges)
-                    {
-                        // if the end of the range is past the end of the found range,
-                        // then the found range encapsulates the range being inspected
-
-                        if (range.End > foundRange.NewRange.End)
-                        {
-                            // extend the found range out to the end of the range being
-                            // inspected to merge them
-                            foundRange.NewRange.End = range.End;
-                            newRanges[foundRange.Index] = foundRange.NewRange;
-                        }
-
-                        // add the range being inspected to the list of ranges to be removed
-                        rangesToRemove.Add(range);      // check if it exists already
-                    }
+                    // current range completely encloses the next range, so remove the next range
+                    IngredientRanges.RemoveAt(i + 1);
+                    continue;
                 }
 
-                // if the range being checked encloses other entries in the new ranges,
-                // remove the other entries
+                if (IngredientRanges[i].Start <= IngredientRanges[i + 1].Start && IngredientRanges[i].End >= IngredientRanges[i + 1].Start && IngredientRanges[i].End <= IngredientRanges[i + 1].End)
+                {
+                    // current range overlaps the start of the next range, so set the end of the current range to the end of the next range, then remove the next range
+                    IngredientRanges[i].End = IngredientRanges[i + 1].End;
+                    IngredientRanges.RemoveAt(i + 1);
+                    continue;
+                }
 
-                // if the range being checked overlaps other entries in the new ranges,
-                // where the checked range's start precedes another range and the checked
-                // range's end is within that same range, merge them together
-
-                // if the range being checked overlaps other entries in the new ranges,
-                // where the checked range's end follows another range and the checked
-                // range's start is within that same range, merge them together
-
-
-                // if the range being checked doesn't overlap any other ranges yet,
-                // add it to the list of new ranges
-                //if (newRanges.Any(r => range.Start < r.Start && range.End))
+                if (IngredientRanges[i].Start >= IngredientRanges[i + 1].Start && IngredientRanges[i].Start <= IngredientRanges[i + 1].End && IngredientRanges[i].End >= IngredientRanges[i + 1].End)
+                {
+                    // current range overlaps the end of the next range, so set the start of the current range to the start of the next range, then remove the next range
+                    IngredientRanges[i].Start = IngredientRanges[i + 1].Start;
+                    IngredientRanges.RemoveAt(i + 1);
+                    continue;
+                }
             }
+
+            ulong freshIngredientCount = 0;
+            Console.WriteLine($"** Final list of ingredient ranges, which has {IngredientRanges.Count:N0} entries");
+
+            foreach (var ingredientRange in IngredientRanges)
+            {
+                Console.WriteLine($"*** {ingredientRange.Start:N0} -> {ingredientRange.End:N0}");
+                freshIngredientCount += (ingredientRange.End - ingredientRange.Start + 1);
+            }
+
+            Console.WriteLine($"** Count of fresh ingredients for all ranges: {freshIngredientCount:N0}");
         }
 	}
 }
