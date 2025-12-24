@@ -83,6 +83,7 @@ namespace Day03
                 }
 
                 List<int> maxJoltageIndexes = [.. batteryBank.Select((c, i) => new { Char = c, Index = i})
+                    .ToList()
                     .Where(tuple => tuple.Char == maxJoltageChar)
                     .Select(tuple => tuple.Index)];
 
